@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ElectroTech — Магазин современной электроники</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f6ff',
+                            100: '#e0edff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        dark: {
+                            bg: '#0f172a',
+                            card: '#1e293b',
+                            border: '#334155'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Скрытие скроллбара для чистых категорий */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Кастомные анимации */
+        @keyframes pulse-subtle {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .animate-pulse-subtle {
+            animation: pulse-subtle 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 flex flex-col min-h-screen font-sans antialiased selection:bg-brand-500 selection:text-white">
+
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20 gap-4">
+                
+                <!-- Логотип -->
+                <div class="flex items-center gap-3 cursor-pointer group" onclick="setCategory('all')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/30 group-hover:scale-105 transition-transform">
+                        <i class="fa-solid font-bold fa-bolt text-xl"></i>
+                    </div>
+                    <span class="text-2xl font-extrabold bg-gradient-to-r from-white via-slate-200 to-brand-500 bg-clip-text text-transparent">ElectroTech</span>
+                </div>
+
+                <!-- Поисковая строка -->
+                <div class="flex-1 max-w-md hidden md:block relative">
+                    <div class="relative">
+                        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Поиск электроники..." 
+                            class="w-full bg-slate-800/80 text-slate-200 placeholder-slate-400 pl-11 pr-4 py-2.5 rounded-full border border-slate-700/60 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all text-sm">
+                        <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                        <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1">
+                            <i class="fa-solid fa-xmark text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Правый блок: Корзина и Мобильный поиск -->
+                <div class="flex items-center gap-3 sm:gap-4">
+                    <!-- Поиск мобильный -->
+                    <button onclick="toggleMobileSearch()" class="md:hidden text-slate-300 hover:text-white p-2.5 rounded-full bg-slate-800/80 border border-slate-700/50">
+                        <i class="fa-solid fa-magnifying-glass text-lg"></i>
+                    </button>
+
+                    <!-- Кнопка корзины -->
+                    <button onclick="toggleCartModal()" class="relative flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white px-4 py-2.5 rounded-full shadow-lg shadow-brand-600/25 transition-all transform hover:-translate-y-0.5 active:translate-y-0">
+                        <i class="fa-solid fa-cart-shopping text-lg"></i>
+                        <span class="font-semibold text-sm hidden sm:inline">Корзина</span>
+                        <span id="cartBadge" class="bg-white text-brand-700 font-extrabold text-xs px-2 py-0.5 rounded-full shadow-sm ml-1">0</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Поиск для мобильных устройств -->
+            <div id="mobileSearch" class="hidden md:hidden pb-4 transition-all">
+                <div class="relative">
+                    <input type="text" id="mobileSearchInput" oninput="handleMobileSearch()" placeholder="Поиск товаров..." 
+                        class="w-full bg-slate-800 text-slate-200 placeholder-slate-400 pl-10 pr-4 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-brand-500 text-sm">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                </div>
+            </div>
+        </div>
+
+        <nav class="border-t border-slate-800/80 bg-slate-900/50 backdrop-blur-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center space-x-2 py-3 overflow-x-auto no-scrollbar" id="categoryTabs">
+                    <!-- Вкладки будут динамически подсвечиваться -->
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <section class="relative rounded-3xl overflow-hidden mb-10 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-800 shadow-2xl">
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=1200&q=80')] bg-cover bg-center opacity-10 mix-blend-overlay"></div>
+            <div class="relative z-10 p-8 sm:p-12 md:p-16 flex flex-col items-start max-w-2xl">
+                <span class="px-3 py-1 bg-brand-500/20 text-brand-400 border border-brand-500/30 rounded-full text-xs font-semibold tracking-wide uppercase mb-4">Флагманские новинки 2026</span>
+                <h1 class="text-3xl sm:text-5xl font-black text-white tracking-tight mb-4 leading-tight">Технологии будущего уже здесь</h1>
+                <p class="text-slate-300 text-base sm:text-lg mb-8 leading-relaxed">Откройте для себя премиальную электронику с гарантийным обслуживанием и бесплатной доставкой при заказе от 50 000 ₽.</p>
+                <button onclick="scrollToProducts()" class="bg-brand-600 hover:bg-brand-500 text-white font-bold px-7 py-3.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
+                    <span>Перейти к покупкам</span>
+                    <i class="fa-solid fa-arrow-right text-sm"></i>
+                </button>
+            </div>
+        </section>
+
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8" id="catalogSection">
+            <div>
+                <h2 id="currentCategoryTitle" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Все товары</h2>
+                <p id="productsCount" class="text-slate-400 text-sm mt-1">Загрузка товаров...</p>
+            </div>
+
+            <!-- Сортировка -->
+            <div class="flex items-center gap-3">
+                <label for="sortBy" class="text-sm text-slate-400 whitespace-nowrap hidden sm:inline">Сортировка:</label>
+                <select id="sortBy" onchange="handleSort()" class="bg-slate-900 text-slate-200 border border-slate-800 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-brand-500 transition-colors cursor-pointer">
+                    <option value="default">По популярности</option>
+                    <option value="price-asc">Сначала дешевле</option>
+                    <option value="price-desc">Сначала дороже</option>
+                    <option value="rating">По рейтингу</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Динамическая генерация карточек -->
+        </div>
+
+        <!-- Пустое состояние (когда ничего не найдено) -->
+        <div id="emptyState" class="hidden text-center py-16 px-4">
+            <div class="w-20 h-20 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-800 text-slate-500">
+                <i class="fa-solid fa-magnifying-glass text-3xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Ничего не найдено</h3>
+            <p class="text-slate-400 max-w-md mx-auto text-sm mb-6">Попробуйте изменить запрос или выберите другую категорию товаров.</p>
+            <button onclick="resetFilters()" class="bg-slate-800 hover:bg-slate-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors border border-slate-700">Сбросить фильтры</button>
+        </div>
+
+    </main>
+
+    <div id="cartModal" class="fixed inset-0 z-50 hidden transition-opacity duration-300">
+        <!-- Бэкдроп -->
+        <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="toggleCartModal()"></div>
+
+        <div class="fixed inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-slate-900 border-l border-slate-800 text-slate-100 flex flex-col shadow-2xl transform transition-transform">
+                
+                <!-- Заголовок корзины -->
+                <div class="p-6 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-bag-shopping text-brand-500 text-xl"></i>
+                        <h3 class="text-xl font-bold text-white">Корзина</h3>
+                    </div>
+                    <button onclick="toggleCartModal()" class="text-slate-400 hover:text-white p-2 rounded-lg transition-colors">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Содержимое корзины -->
+                <div id="cartItemsList" class="flex-1 overflow-y-auto p-6 space-y-4">
+                    <!-- Товарные позиции корзины -->
+                </div>
+
+                <!-- Футер корзины со стоимостью -->
+                <div id="cartFooter" class="p-6 border-t border-slate-800 bg-slate-900/80 space-y-4">
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-slate-400 text-sm">
+                            <span>Товары:</span>
+                            <span id="cartSubtotal">0 ₽</span>
+                        </div>
+                        <div class="flex justify-between text-slate-400 text-sm">
+                            <span>Доставка:</span>
+                            <span class="text-emerald-400 font-medium">Бесплатно</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-bold text-white pt-2 border-t border-slate-800">
+                            <span>Итого:</span>
+                            <span id="cartTotal" class="text-brand-400">0 ₽</span>
+                        </div>
+                    </div>
+
+                    <button onclick="openCheckoutModal()" class="w-full bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-brand-600/30 transition-all hover:shadow-brand-600/50 flex items-center justify-center gap-2">
+                        <span>Оформить заказ</span>
+                        <i class="fa-solid fa-arrow-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="productDetailModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-4 text-center sm:p-0">
+            <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm transition-opacity" onclick="closeDetailModal()"></div>
+
+            <div class="relative bg-slate-900 border border-slate-800 rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:max-w-2xl sm:w-full">
+                <button onclick="closeDetailModal()" class="absolute top-4 right-4 z-10 bg-slate-800/80 text-slate-400 hover:text-white p-2 rounded-full backdrop-blur-md transition-colors border border-slate-700">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+
+                <div class="grid grid-cols-1 md:grid-cols-2">
+                    <div class="h-64 md:h-full bg-slate-800 relative">
+                        <img id="detailImage" src="" alt="" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 md:p-8 flex flex-col justify-between">
+                        <div>
+                            <span id="detailCategory" class="text-xs font-semibold text-brand-400 uppercase tracking-wider bg-brand-500/10 px-2.5 py-1 rounded-full border border-brand-500/20">Категория</span>
+                            <h3 id="detailTitle" class="text-2xl font-extrabold text-white mt-3 mb-2">Название товара</h3>
+                            
+                            <div class="flex items-center gap-2 mb-4">
+                                <div id="detailStars" class="flex text-amber-400 text-sm"></div>
+                                <span id="detailRating" class="text-slate-400 text-xs font-medium">4.8</span>
+                            </div>
+
+                            <p id="detailDescription" class="text-slate-300 text-sm leading-relaxed mb-6">Подробное описание товара...</p>
+                            
+                            <!-- Характеристики -->
+                            <div class="mb-6 space-y-2">
+                                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Характеристики:</h4>
+                                <ul id="detailSpecs" class="text-xs text-slate-300 space-y-1">
+                                    <!-- Динамический список характеристик -->
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex items-baseline gap-2 mb-4">
+                                <span id="detailPrice" class="text-3xl font-black text-white">0 ₽</span>
+                            </div>
+                            <button id="detailAddToCartBtn" onclick="" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl shadow-lg shadow-brand-600/30 transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-cart-plus"></i>
+                                <span>Добавить в корзину</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="checkoutModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm" onclick="closeCheckoutModal()"></div>
+
+            <div class="relative bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl z-10">
+                <button onclick="closeCheckoutModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+
+                <h3 class="text-2xl font-bold text-white mb-2">Оформление заказа</h3>
+                <p class="text-slate-400 text-sm mb-6">Заполните данные для доставки товара</p>
+
+                <form id="checkoutForm" onsubmit="handleCheckout(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Ваше имя *</label>
+                        <input type="text" required placeholder="Иван Иванов" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Телефон *</label>
+                        <input type="tel" required placeholder="+7 (999) 000-00-00" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Адрес доставки *</label>
+                        <textarea required rows="2" placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 text-sm resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-300 mb-1">Способ оплаты</label>
+                        <select class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-brand-500 text-sm">
+                            <option>Картой онлайн</option>
+                            <option>При получении</option>
+                            <option>SberPay / СБП</option>
+                        </select>
+                    </div>
+
+                    <div class="pt-4 border-t border-slate-800 flex items-center justify-between">
+                        <div>
+                            <span class="block text-xs text-slate-400">Сумма к оплате:</span>
+                            <span id="checkoutTotal" class="text-xl font-black text-brand-400">0 ₽</span>
+                        </div>
+                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2">
+                            <span>Подтвердить</span>
+                            <i class="fa-solid fa-check"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Уведомления (Toasts) -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <footer class="bg-slate-900 border-t border-slate-800 text-slate-400 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- О компании -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-brand-600 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <span class="text-xl font-extrabold text-white">ElectroTech</span>
+                    </div>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Ваш надежный гид в мире высокотехнологичной электроники и гаджетов последнего поколения.
+                    </p>
+                    <div class="flex gap-4 text-slate-400">
+                        <a href="#" class="hover:text-brand-400 transition-colors"><i class="fa-brands fa-telegram text-lg"></i></a>
+                        <a href="#" class="hover:text-brand-400 transition-colors"><i class="fa-brands fa-vk text-lg"></i></a>
+                        <a href="#" class="hover:text-brand-400 transition-colors"><i class="fa-brands fa-youtube text-lg"></i></a>
+                    </div>
+                </div>
+
+                <!-- Покупателям -->
+                <div>
+                    <h4 class="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Покупателям</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white transition-colors">Как сделать заказ</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Способы оплаты</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Доставка и выдача</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Возврат товара</a></li>
+                    </ul>
+                </div>
+
+                <!-- Категории -->
+                <div>
+                    <h4 class="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Категории</h4>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="javascript:void(0)" onclick="setCategory('smartphones')" class="hover:text-white transition-colors">Смартфоны</a></li>
+                        <li><a href="javascript:void(0)" onclick="setCategory('laptops')" class="hover:text-white transition-colors">Ноутбуки</a></li>
+                        <li><a href="javascript:void(0)" onclick="setCategory('headphones')" class="hover:text-white transition-colors">Наушники</a></li>
+                        <li><a href="javascript:void(0)" onclick="setCategory('watches')" class="hover:text-white transition-colors">Смарт-часы</a></li>
+                    </ul>
+                </div>
+
+                <!-- Контакты -->
+                <div>
+                    <h4 class="text-white font-semibold text-sm mb-4 uppercase tracking-wider">Контакты</h4>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-center gap-3">
+                            <i class="fa-solid fa-phone text-brand-500"></i>
+                            <span>8 (800) 555-35-35</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fa-solid fa-envelope text-brand-500"></i>
+                            <span>support@electrotech.kz</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <i class="fa-solid fa-location-dot text-brand-500"></i>
+                            <span>Алматы, ул.Толе би, 12</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
+                <p>© 2026 ElectroTech Store. Все права защищены.</p>
+                <div class="flex gap-6">
+                    <a href="#" class="hover:underline">Конфиденциальность</a>
+                    <a href="#" class="hover:underline">Оферта</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // База данных товаров
+        const products = [
+            {
+                id: 1,
+                title: "iPhone 15 Pro Max 256GB",
+                category: "smartphones",
+                price: 139990,
+                rating: 4.9,
+                reviewsCount: 128,
+                image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=600&q=80",
+                description: "Флагманский смартфон в титановом корпусе с мощнейшим процессором A17 Pro и революционной камерой 48 Мп.",
+                specs: ["Дисплей: 6.7\" Super Retina XDR", "Процессор: Apple A17 Pro", "Камера: 48 MP + 12 MP + 12 MP", "Память: 256 ГБ"]
+            },
+            {
+                id: 2,
+                title: "MacBook Pro 16 M3 Max",
+                category: "laptops",
+                price: 329990,
+                rating: 5.0,
+                reviewsCount: 64,
+                image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=600&q=80",
+                description: "Максимальная производительность для профессиональных задач с новейшим чипом M3 Max и ярким Liquid Retina XDR экраном.",
+                specs: ["Дисплей: 16.2\" Liquid Retina XDR", "Чип: Apple M3 Max (16 ядер)", "ОЗУ: 36 ГБ", "SSD: 1 ТБ"]
+            },
+            {
+                id: 3,
+                title: "Sony WH-1000XM5 Black",
+                category: "headphones",
+                price: 34990,
+                rating: 4.8,
+                reviewsCount: 210,
+                image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80",
+                description: "Премиальные полноразмерные беспроводные наушники с лучшим в классе активным шумоподавлением.",
+                specs: ["Время работы: до 30 часов", "Шумоподавление: Активное (ANC)", "Разъем: USB Type-C", "Вес: 250г"]
+            },
+            {
+                id: 4,
+                title: "Apple Watch Ultra 2 Titanium",
+                category: "watches",
+                price: 89990,
+                rating: 4.9,
+                reviewsCount: 85,
+                image: "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&w=600&q=80",
+                description: "Самые прочные и функциональные смарт-часы для экстремальных приключений и профессионального спорта.",
+                specs: ["Корпус: Титан 49 мм", "Дисплей: OLED Retina 3000 нит", "Защита: Влагозащита 100м", "Автономность: до 36 часов"]
+            },
+            {
+                id: 5,
+                title: "Samsung Galaxy S24 Ultra",
+                category: "smartphones",
+                price: 124990,
+                rating: 4.7,
+                reviewsCount: 95,
+                image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=600&q=80",
+                description: "Инновационный смартфон со встроенным искусственным интеллектом Galaxy AI и пером S Pen.",
+                specs: ["Дисплей: 6.8\" Dynamic AMOLED 2X", "Процессор: Snapdragon 8 Gen 3", "Камера: 200 MP", "Память: 512 ГБ"]
+            },
+            {
+                id: 6,
+                title: "Asus ROG Zephyrus G16",
+                category: "laptops",
+                price: 219990,
+                rating: 4.8,
+                reviewsCount: 42,
+                image: "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&w=600&q=80",
+                description: "Мощный игровой ноутбук в ультратонком алюминиевом корпусе с экраном ROG Nebula OLED.",
+                specs: ["Дисплей: 16\" OLED 240Hz", "Видеокарта: RTX 4070 8GB", "Процессор: Intel Core Ultra 9", "ОЗУ: 32 ГБ"]
+            },
+            {
+                id: 7,
+                title: "AirPods Pro 2 USB-C",
+                category: "headphones",
+                price: 24990,
+                rating: 4.9,
+                reviewsCount: 340,
+                image: "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=600&q=80",
+                description: "Легендарные внутриканальные наушники с чипом H2, адаптивным аудионастройками и кейсом USB-C.",
+                specs: ["Шумоподавление: Адаптивное", "Чип: Apple H2", "Защита: IP54", "Зарядка: MagSafe / USB-C"]
+            },
+            {
+                id: 8,
+                title: "Зарядное устройство Anker 100W",
+                category: "accessories",
+                price: 5990,
+                rating: 4.6,
+                reviewsCount: 77,
+                image: "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=600&q=80",
+                description: "Универсальное быстрый адаптер питания с технологией GaN для одновременной зарядки 3 устройств.",
+                specs: ["Мощность: 100W", "Порты: 2x USB-C, 1x USB-A", "Технология: GaNPrime"]
+            }
+        ];
+
+        // Категории
+        const categories = [
+            { id: 'all', name: 'Все товары', icon: 'fa-border-all' },
+            { id: 'smartphones', name: 'Смартфоны', icon: 'fa-mobile-screen-button' },
+            { id: 'laptops', name: 'Ноутбуки', icon: 'fa-laptop' },
+            { id: 'headphones', name: 'Наушники', icon: 'fa-headphones' },
+            { id: 'watches', name: 'Часы', icon: 'fa-stopwatch' },
+            { id: 'accessories', name: 'Аксессуары', icon: 'fa-plug' }
+        ];
+
+        // Состояние приложения
+        let currentCategory = 'all';
+        let searchQuery = '';
+        let cart = JSON.parse(localStorage.getItem('cart_items')) || [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCategories();
+            renderProducts();
+            updateCartUI();
+        });
+
+        // Отрисовка вкладок категорий
+        function renderCategories() {
+            const tabsContainer = document.getElementById('categoryTabs');
+            tabsContainer.innerHTML = categories.map(cat => `
+                <button onclick="setCategory('${cat.id}')" 
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${
+                        currentCategory === cat.id 
+                        ? 'bg-brand-600 text-white shadow-lg shadow-brand-600/30' 
+                        : 'bg-slate-800/60 text-slate-400 hover:text-white hover:bg-slate-800'
+                    }">
+                    <i class="fa-solid ${cat.icon}"></i>
+                    <span>${cat.name}</span>
+                </button>
+            `).join('');
+        }
+
+        // Переключение категории
+        function setCategory(catId) {
+            currentCategory = catId;
+            renderCategories();
+            
+            // Обновление заголовка
+            const categoryObj = categories.find(c => c.id === catId);
+            document.getElementById('currentCategoryTitle').innerText = categoryObj ? categoryObj.name : 'Каталог';
+            
+            renderProducts();
+        }
+
+        // Фильтрация и сортировка товаров
+        function getFilteredProducts() {
+            let filtered = products.filter(p => {
+                const matchesCategory = currentCategory === 'all' || p.category === currentCategory;
+                const matchesSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                                      p.description.toLowerCase().includes(searchQuery.toLowerCase());
+                return matchesCategory && matchesSearch;
+            });
+
+            // Сортировка
+            const sortVal = document.getElementById('sortBy').value;
+            if (sortVal === 'price-asc') filtered.sort((a,b) => a.price - b.price);
+            if (sortVal === 'price-desc') filtered.sort((a,b) => b.price - a.price);
+            if (sortVal === 'rating') filtered.sort((a,b) => b.rating - a.rating);
+
+            return filtered;
+        }
+
+        // Отрисовка списка товаров
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            const emptyState = document.getElementById('emptyState');
+            const filtered = getFilteredProducts();
+
+            document.getElementById('productsCount').innerText = `Найдено товаров: ${filtered.length}`;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            grid.innerHTML = filtered.map(product => `
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700 transition-all hover:shadow-xl hover:shadow-brand-500/5 group flex flex-col justify-between">
+                    <div class="relative overflow-hidden cursor-pointer bg-slate-800 h-52" onclick="openDetailModal(${product.id})">
+                        <img src="${product.image}" alt="${product.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span class="bg-slate-900/90 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-md border border-slate-700">Быстрый просмотр</span>
+                        </div>
+                    </div>
+
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-medium text-brand-400 uppercase tracking-wider">${getCategoryName(product.category)}</span>
+                                <div class="flex items-center gap-1 text-amber-400 text-xs font-bold">
+                                    <i class="fa-solid fa-star"></i>
+                                    <span>${product.rating}</span>
+                                </div>
+                            </div>
+                            <h3 onclick="openDetailModal(${product.id})" class="text-base font-bold text-white hover:text-brand-400 cursor-pointer transition-colors line-clamp-1 mb-2">${product.title}</h3>
+                            <p class="text-slate-400 text-xs line-clamp-2 mb-4">${product.description}</p>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-800/80 flex items-center justify-between mt-auto">
+                            <div>
+                                <span class="text-xs text-slate-500 block">Цена</span>
+                                <span class="text-lg font-black text-white">${formatPrice(product.price)}</span>
+                            </div>
+                            <button onclick="addToCart(${product.id})" class="bg-slate-800 hover:bg-brand-600 text-slate-200 hover:text-white p-2.5 rounded-xl transition-all border border-slate-700 hover:border-brand-500 flex items-center gap-2 text-sm font-semibold active:scale-95">
+                                <i class="fa-solid fa-cart-plus"></i>
+                                <span class="hidden sm:inline">В корзину</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Поиск
+        function handleSearch() {
+            searchQuery = document.getElementById('searchInput').value;
+            const clearBtn = document.getElementById('clearSearchBtn');
+            if (searchQuery) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+            renderProducts();
+        }
+
+        function handleMobileSearch() {
+            searchQuery = document.getElementById('mobileSearchInput').value;
+            renderProducts();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('mobileSearchInput').value = '';
+            searchQuery = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            renderProducts();
+        }
+
+        function toggleMobileSearch() {
+            const ms = document.getElementById('mobileSearch');
+            ms.classList.toggle('hidden');
+        }
+
+        function handleSort() {
+            renderProducts();
+        }
+
+        function resetFilters() {
+            clearSearch();
+            setCategory('all');
+        }
+
+        function scrollToProducts() {
+            document.getElementById('catalogSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existing = cart.find(item => item.id === productId);
+
+            if (existing) {
+                existing.quantity += 1;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+
+            saveCart();
+            updateCartUI();
+            showToast(`Товар "${product.title}" добавлен в корзину`);
+
+            // Анимация кнопки корзины
+            const badge = document.getElementById('cartBadge');
+            badge.classList.add('animate-pulse-subtle');
+            setTimeout(() => badge.classList.remove('animate-pulse-subtle'), 300);
+        }
+
+        function updateQuantity(productId, delta) {
+            const item = cart.find(i => i.id === productId);
+            if (!item) return;
+
+            item.quantity += delta;
+            if (item.quantity <= 0) {
+                cart = cart.filter(i => i.id !== productId);
+            }
+
+            saveCart();
+            updateCartUI();
+        }
+
+        function removeFromCart(productId) {
+            cart = cart.filter(i => i.id !== productId);
+            saveCart();
+            updateCartUI();
+        }
+
+        function saveCart() {
+            localStorage.setItem('cart_items', JSON.stringify(cart));
+        }
+
+        function updateCartUI() {
+            const cartItemsList = document.getElementById('cartItemsList');
+            const cartBadge = document.getElementById('cartBadge');
+            const cartSubtotal = document.getElementById('cartSubtotal');
+            const cartTotal = document.getElementById('cartTotal');
+            const cartFooter = document.getElementById('cartFooter');
+
+            const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+            cartBadge.innerText = totalCount;
+            cartSubtotal.innerText = formatPrice(totalPrice);
+            cartTotal.innerText = formatPrice(totalPrice);
+
+            if (cart.length === 0) {
+                cartItemsList.innerHTML = `
+                    <div class="text-center py-12 text-slate-500">
+                        <i class="fa-solid fa-basket-shopping text-4xl mb-3 block opacity-50"></i>
+                        <p class="text-sm">Ваша корзина пуста</p>
+                    </div>
+                `;
+                cartFooter.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                cartFooter.classList.remove('opacity-50', 'pointer-events-none');
+                cartItemsList.innerHTML = cart.map(item => `
+                    <div class="flex gap-4 p-3 bg-slate-800/50 border border-slate-800 rounded-xl items-center">
+                        <img src="${item.image}" alt="${item.title}" class="w-16 h-16 object-cover rounded-lg bg-slate-700">
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-semibold text-white truncate">${item.title}</h4>
+                            <span class="text-xs text-brand-400 font-bold block mt-1">${formatPrice(item.price)}</span>
+                            <div class="flex items-center gap-2 mt-2">
+                                <button onclick="updateQuantity(${item.id}, -1)" class="w-6 h-6 rounded-md bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center text-xs">-</button>
+                                <span class="text-xs font-semibold text-white px-1">${item.quantity}</span>
+                                <button onclick="updateQuantity(${item.id}, 1)" class="w-6 h-6 rounded-md bg-slate-700 hover:bg-slate-600 text-white flex items-center justify-center text-xs">+</button>
+                            </div>
+                        </div>
+                        <button onclick="removeFromCart(${item.id})" class="text-slate-500 hover:text-red-400 p-1 transition-colors">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        </button>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function toggleCartModal() {
+            const modal = document.getElementById('cartModal');
+            modal.classList.toggle('hidden');
+        }
+
+        function openDetailModal(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            document.getElementById('detailImage').src = product.image;
+            document.getElementById('detailCategory').innerText = getCategoryName(product.category);
+            document.getElementById('detailTitle').innerText = product.title;
+            document.getElementById('detailRating').innerText = `${product.rating} (${product.reviewsCount} отзывов)`;
+            document.getElementById('detailDescription').innerText = product.description;
+            document.getElementById('detailPrice').innerText = formatPrice(product.price);
+            
+            // Звезды
+            const starsContainer = document.getElementById('detailStars');
+            starsContainer.innerHTML = Array.from({length: 5}, (_, i) => 
+                `<i class="fa-solid fa-star ${i < Math.floor(product.rating) ? 'text-amber-400' : 'text-slate-600'}"></i>`
+            ).join('');
+
+            // Характеристики
+            const specsContainer = document.getElementById('detailSpecs');
+            specsContainer.innerHTML = product.specs.map(s => `<li class="flex items-center gap-2"><i class="fa-solid fa-circle-check text-brand-500 text-[10px]"></i> ${s}</li>`).join('');
+
+            document.getElementById('detailAddToCartBtn').onclick = () => {
+                addToCart(product.id);
+                closeDetailModal();
+            };
+
+            document.getElementById('productDetailModal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('productDetailModal').classList.add('hidden');
+        }
+
+        function openCheckoutModal() {
+            if (cart.length === 0) return;
+            toggleCartModal();
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            document.getElementById('checkoutTotal').innerText = formatPrice(totalPrice);
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+        }
+
+        function handleCheckout(e) {
+            e.preventDefault();
+            cart = [];
+            saveCart();
+            updateCartUI();
+            closeCheckoutModal();
+            showToast('Заказ успешно оформлен! Наш менеджер свяжется с вами.');
+        }
+
+        // Вспомогательные функции
+        function formatPrice(price) {
+            return price.toLocaleString('ru-RU') + ' ₽';
+        }
+
+        function getCategoryName(catId) {
+            const cat = categories.find(c => c.id === catId);
+            return cat ? cat.name : 'Электроника';
+        }
+
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'bg-slate-800 text-white border border-slate-700 px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0 text-sm';
+            toast.innerHTML = `
+                <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
